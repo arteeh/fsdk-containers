@@ -16,7 +16,7 @@ local_tag := "build"
 # commit for readability, but a tag is mutable on the registry -- the digest
 # is the immutable pin podman actually pulls by. When bumping the tag,
 # refresh the digest too: skopeo inspect --format '{{.Digest}}' docker://<image>:<tag>
-export bst2_image := "registry.gitlab.com/freedesktop-sdk/infrastructure/freedesktop-sdk-docker-images/bst2:64eb0b4930d57a92710822898fb73af6cc1ae35d@sha256:2ca3b449b594e9284bd60f436a4efad1365116b7d3d7129fd08b7a4f459d3561"
+export bst2_image := env("BST2_IMAGE", "registry.gitlab.com/freedesktop-sdk/infrastructure/freedesktop-sdk-docker-images/bst2:64eb0b4930d57a92710822898fb73af6cc1ae35d@sha256:2ca3b449b594e9284bd60f436a4efad1365116b7d3d7129fd08b7a4f459d3561")
 
 # OCI metadata (dynamic labels), injected at export time.
 export OCI_IMAGE_CREATED := env("OCI_IMAGE_CREATED", "")
@@ -45,8 +45,16 @@ export fsdk_ref := `grep -E '^\s*ref:' elements/freedesktop-sdk.bst | head -1 | 
 #     grid is x86_64-only (no aarch64 RE workers yet)
 # If the cluster is unreachable the recipe FAILS (no silent local fallback) —
 # set BST_LOCAL=1 explicitly to build locally. See docs/skills/remote-execution.md.
+_check-bst2-image:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ ! "${bst2_image}" =~ @sha256:[0-9a-f]{64}$ ]]; then
+        echo "ERROR: bst2_image must use an immutable @sha256 digest" >&2
+        exit 1
+    fi
+
 [group('dev')]
-bst *ARGS:
+bst *ARGS: _check-bst2-image
     #!/usr/bin/env bash
     set -euo pipefail
     mkdir -p "${HOME}/.cache/buildstream"
@@ -906,7 +914,7 @@ uninstall-brew:
 # any name from the elements/targets.json manifest, or the special value
 # "podman-vm" for the VM guest disk (not part of the OCI manifest).
 [group('test')]
-sbom variant="base":
+sbom variant="base": _check-bst2-image
     #!/usr/bin/env bash
     set -euo pipefail
     if [ "{{variant}}" = "podman-vm" ]; then
@@ -959,7 +967,7 @@ sbom variant="base":
 
 # Generate BuildStream-native SBOMs for all images in a single optimized container run
 [group('test')]
-sboms:
+sboms: _check-bst2-image
     #!/usr/bin/env bash
     set -euo pipefail
     mkdir -p "${HOME}/.cache/buildstream"
