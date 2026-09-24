@@ -21,7 +21,7 @@ export bst2_image := env("BST2_IMAGE", "registry.gitlab.com/freedesktop-sdk/infr
 _check-bst2-image:
     #!/usr/bin/env bash
     set -euo pipefail
-    if [[ ! "${bst2_image}" =~ @sha256:[0-9a-f]{64}$ ]]; then
+    if [[ ! "${bst2_image}" =~ ^[A-Za-z0-9._/:-]+@sha256:[0-9a-f]{64}$ ]]; then
         echo "ERROR: bst2_image must use an immutable @sha256 digest" >&2
         exit 1
     fi
@@ -121,7 +121,7 @@ bst *ARGS: _check-bst2-image
         -v "{{justfile_directory()}}:/src:rw" \
         -v "${HOME}/.cache/buildstream:/root/.cache/buildstream:rw" \
         -w /src \
-        "{{bst2_image}}" \
+        "${bst2_image}" \
         bash -c 'bst --colors "$@"' -- --no-interactive "${RE_FLAG[@]}" ${BST_FLAGS:-} {{ARGS}}
 
 # Print the tag set derived from the FSDK release: minor line and point
@@ -947,7 +947,7 @@ sbom variant="base": _check-bst2-image
         -e SPDX_NAME="${SPDX_NAME}" \
         -e OUTFILE="${OUTFILE}" \
         -e GIT_SHA="${GIT_SHA}" \
-        "{{bst2_image}}" \
+        "${bst2_image}" \
         bash -c '
             for attempt in 1 2 3; do
                 pip install --quiet \
@@ -990,7 +990,7 @@ sboms: _check-bst2-image
         -w /src \
         -e GIT_SHA="${GIT_SHA}" \
         -e IMAGES="${IMAGES}" \
-        "{{bst2_image}}" \
+        "${bst2_image}" \
         bash -c '
             for attempt in 1 2 3; do
                 pip install --quiet \
