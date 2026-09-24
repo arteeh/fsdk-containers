@@ -17,6 +17,7 @@ metadata:
   context7-sources:
     - /websites/renovatebot
     - /apache/buildstream
+    - /casey/just
 ---
 # Track Upstream Versions
 
