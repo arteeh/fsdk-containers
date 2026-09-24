@@ -18,6 +18,14 @@ local_tag := "build"
 # refresh the digest too: skopeo inspect --format '{{.Digest}}' docker://<image>:<tag>
 export bst2_image := env("BST2_IMAGE", "registry.gitlab.com/freedesktop-sdk/infrastructure/freedesktop-sdk-docker-images/bst2:64eb0b4930d57a92710822898fb73af6cc1ae35d@sha256:2ca3b449b594e9284bd60f436a4efad1365116b7d3d7129fd08b7a4f459d3561")
 
+_check-bst2-image:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ ! "${bst2_image}" =~ @sha256:[0-9a-f]{64}$ ]]; then
+        echo "ERROR: bst2_image must use an immutable @sha256 digest" >&2
+        exit 1
+    fi
+
 # OCI metadata (dynamic labels), injected at export time.
 export OCI_IMAGE_CREATED := env("OCI_IMAGE_CREATED", "")
 export OCI_IMAGE_REVISION := env("OCI_IMAGE_REVISION", "")
@@ -45,14 +53,6 @@ export fsdk_ref := `grep -E '^\s*ref:' elements/freedesktop-sdk.bst | head -1 | 
 #     grid is x86_64-only (no aarch64 RE workers yet)
 # If the cluster is unreachable the recipe FAILS (no silent local fallback) —
 # set BST_LOCAL=1 explicitly to build locally. See docs/skills/remote-execution.md.
-_check-bst2-image:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    if [[ ! "${bst2_image}" =~ @sha256:[0-9a-f]{64}$ ]]; then
-        echo "ERROR: bst2_image must use an immutable @sha256 digest" >&2
-        exit 1
-    fi
-
 [group('dev')]
 bst *ARGS: _check-bst2-image
     #!/usr/bin/env bash
